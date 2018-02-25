@@ -116,6 +116,9 @@ namespace Gravity.Manager.Data.EF
                 audit.EntityName = entry.Metadata.DisplayName();
                 audit.UserId = (operatingUser).Id;
                 audit.Date = dateTime;
+
+                // FIX: insert audit entity into the database
+                Add(audit);
             }
         }
 
