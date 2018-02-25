@@ -44,15 +44,8 @@ namespace Gravity.Manager.Web.Application
                 userStateClaim
             };
 
-//            var properties = new AuthenticationProperties()
-//            {
-//                AllowRefresh = true,
-//                ExpiresUtc = _dateTimeProvider.Now().AddHours(3),
-//                IsPersistent = false,
-//                IssuedUtc = _dateTimeProvider.Now()                    
-//            };
-            
-            claims.Add(new Claim(ClaimTypes.Name, userState.Name));
+            // FIX: userState.Name can be null on first logon
+            claims.Add(new Claim(ClaimTypes.Name, userState.UserName));
                         
             var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
 
