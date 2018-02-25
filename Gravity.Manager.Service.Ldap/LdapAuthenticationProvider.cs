@@ -26,6 +26,11 @@ namespace Gravity.Manager.Service.Ldap
                 {
                     ldapConnection.SecureSocketLayer = _ldapConnectionOptions.UseSecureConnection;
                     ldapConnection.Connect(_ldapConnectionOptions.HostAddress, _ldapConnectionOptions.Port);
+
+                    // FIX: authenticate to the Ldap server
+                    // URL: https://long2know.com/2017/06/net-core-ldap/
+                    ldapConnection.Bind(logonName, logonPassword);
+
                     return ldapConnection.Bound;
                 }
                 catch (Exception ex)
