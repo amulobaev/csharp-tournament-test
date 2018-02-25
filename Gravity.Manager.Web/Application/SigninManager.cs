@@ -41,16 +41,15 @@ namespace Gravity.Manager.Web.Application
 
             var claims = new List<Claim>
             {
-                userStateClaim
+                userStateClaim,
+                // FIX: use UserName as claim value because userState.Name can be null on first logon
+                new Claim(ClaimTypes.Name, userState.UserName)
             };
 
-            // FIX: userState.Name can be null on first logon
-            claims.Add(new Claim(ClaimTypes.Name, userState.UserName));
-                        
             var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
 
             var principal = new ClaimsPrincipal(identity);
-            
+
             await _httpContextAccessor.HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
         }
 
