@@ -32,7 +32,8 @@
             <div class="panel panel-default">
                 <div class="panel-body">
                     <div class="alert alert-danger" role="alert">
-                        @Html.ValidationMessage("error")
+                        @*Fix: show validation summary*@
+                        @Html.ValidationSummary()
                     </div>
                 </div>
             </div>
