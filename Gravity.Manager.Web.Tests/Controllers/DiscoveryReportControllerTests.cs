@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using Gravity.Manager.Data.EF.Tests;
 using Gravity.Manager.Service;
@@ -85,9 +86,12 @@ namespace Gravity.Manager.Web.Tests.Controllers
         [Test]
         public void Controller_Report_ReturnsErrorMessageForMissingReport()
         {
-            var reportId = (long) ((ViewResult) _controller.Report(-1).Result).Model;
-            
-            Assert.AreEqual(-1, reportId);
+            // FIX: DiscoveryReport class throws exception for missing session
+            var exception = Assert.Throws<AggregateException>(() =>
+            {
+                var reportId = (long) ((ViewResult) _controller.Report(-1).Result).Model;
+            });
+            Assert.That(exception.InnerExceptions.FirstOrDefault(), Is.TypeOf(typeof(ArgumentException)));
         }
     }
 }
