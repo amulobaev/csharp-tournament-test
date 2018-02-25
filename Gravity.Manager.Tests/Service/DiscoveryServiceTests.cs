@@ -27,20 +27,23 @@ namespace Gravity.Manager.Tests.Service
             var createdAcc = await svc.GetOrCreateAwsAccountAsync("acc1");
             var existingAcc = await svc.GetOrCreateAwsAccountAsync("acc1");
             Assert.AreEqual(createdAcc.Id, existingAcc.Id);
-            
+
             var createdAcc2 = await svc.GetOrCreateAwsAccountAsync("acc2");
             Assert.AreNotEqual(createdAcc.Id, createdAcc2.Id);
 
             var accounts = await svc.GetAwsAccountsAsync();
-            Assert.AreEqual(new[] {createdAcc.Id, createdAcc2.Id}, accounts.Select(x => x.Id).OrderBy(x => x));
+            Assert.AreEqual(new[] { createdAcc.Id, createdAcc2.Id }, accounts.Select(x => x.Id).OrderBy(x => x));
         }
 
         [Test]
         public void Service_GetDependencyMatrixForMissingSession_ReturnsNull()
         {
-            var res = GetService().GetDiscoveryReportAsync(-1).Result;
-
-            Assert.IsNull(res);
+            // FIX: DiscoveryReport class throws exception for missing session
+            var exception = Assert.Throws<AggregateException>(() =>
+            {
+                var res = GetService().GetDiscoveryReportAsync(-1).Result;
+            });
+            Assert.That(exception.InnerExceptions.FirstOrDefault(), Is.TypeOf(typeof(ArgumentException)));
         }
 
         [Test]
@@ -77,23 +80,23 @@ namespace Gravity.Manager.Tests.Service
         {
             string AssertThrows(DependencyInfo dep) => Assert.ThrowsAsync<ArgumentException>(
                     () => GetService().InsertDiscoverySessionAsync(new DiscoverySessionInfo
-                {
-                    AwsAccountId = 1,
-                    Dependencies = new []{dep},
-                    DiscoveryReports = new DiscoveryReportInfo[0]
-                }))
+                    {
+                        AwsAccountId = 1,
+                        Dependencies = new[] { dep },
+                        DiscoveryReports = new DiscoveryReportInfo[0]
+                    }))
                 .Message.Split(Environment.NewLine).First();
 
             var ex = AssertThrows(new DependencyInfo());
             Assert.AreEqual("DependencyInfo.FileName can not be null or empty.", ex);
 
-            ex = AssertThrows(new DependencyInfo {FileName = "foo"});
+            ex = AssertThrows(new DependencyInfo { FileName = "foo" });
             Assert.AreEqual("DependencyInfo.Text can not be null or empty.", ex);
 
-            ex = AssertThrows(new DependencyInfo {FileName = "foo", Text = "text"});
+            ex = AssertThrows(new DependencyInfo { FileName = "foo", Text = "text" });
             Assert.AreEqual("DependencyInfo.Source can not be null.", ex);
-            
-            ex = AssertThrows(new DependencyInfo {FileName = "foo", Text = "text", Source = IPAddress.Loopback});
+
+            ex = AssertThrows(new DependencyInfo { FileName = "foo", Text = "text", Source = IPAddress.Loopback });
             Assert.AreEqual("DependencyInfo.Target can not be null.", ex);
         }
 
@@ -104,39 +107,39 @@ namespace Gravity.Manager.Tests.Service
 
             var arr = matrix.DependencyMatrix;
             Assert.AreEqual(3, arr.Length);  // 3 unique instances
-            
+
             var inst = matrix.Session.AwsInstances;
-            Assert.AreEqual(new[] {"196.168.1.1", "196.168.1.2", "196.168.1.3"},
+            Assert.AreEqual(new[] { "196.168.1.1", "196.168.1.2", "196.168.1.3" },
                 inst.Select(x => x.IpAddress.ToString()).OrderBy(x => x).ToArray());
-            
+
             // 1 mentions 2 with 2 findings
             var dep = arr[0][1];
             Assert.AreSame(inst[0], dep.SourceAwsInstance);
             Assert.AreSame(inst[1], dep.TargetAwsInstance);
-            CollectionAssert.AreEquivalent(new[] {"web.config", "myconf"},
+            CollectionAssert.AreEquivalent(new[] { "web.config", "myconf" },
                 dep.DependencyFindings.Select(x => x.FileName));
-            
+
             // does not mention 1 or 3.
             Assert.IsNull(arr[0][0]);
             Assert.IsNull(arr[0][2]);
-            
+
             // 2 mentions 1 with 1 finding. 
             dep = arr[1][0];
             Assert.AreSame(inst[1], dep.SourceAwsInstance);
             Assert.AreSame(inst[0], dep.TargetAwsInstance);
             Assert.AreEqual("settings.xml", dep.DependencyFindings.Single().FileName);
-            
+
             // does not mention 2 or 3.
             Assert.IsNull(arr[1][1]);
             Assert.IsNull(arr[1][2]);
-            
+
             // 3 mentions 1 with 2 findings.
             dep = arr[2][0];
             Assert.AreSame(inst[2], dep.SourceAwsInstance);
             Assert.AreSame(inst[0], dep.TargetAwsInstance);
-            CollectionAssert.AreEquivalent(new[] {"nginx.log", "nginx.log2"},
+            CollectionAssert.AreEquivalent(new[] { "nginx.log", "nginx.log2" },
                 dep.DependencyFindings.Select(x => x.FileName));
-            
+
             // does not mention 2 or 3.
             Assert.IsNull(arr[2][1]);
             Assert.IsNull(arr[2][2]);
@@ -150,13 +153,13 @@ namespace Gravity.Manager.Tests.Service
             foreach (var awsInstance in report.Session.AwsInstances)
             {
                 var lines = awsInstance.ReportLines;
-                
+
                 // Order is generated automatically.
-                Assert.AreEqual(new[] {0, 1, 2}, lines.Select(x => x.Order).ToArray());
-                
+                Assert.AreEqual(new[] { 0, 1, 2 }, lines.Select(x => x.Order).ToArray());
+
                 // Hierarchy is preserved.
-                Assert.AreEqual(lines, new[] {lines[0]}.Flatten(x => x.Children));
-                Assert.AreEqual(new[] {RootReportLineName, null, LeafReportLineName}, lines.Select(x => x.Name).ToArray());
+                Assert.AreEqual(lines, new[] { lines[0] }.Flatten(x => x.Children));
+                Assert.AreEqual(new[] { RootReportLineName, null, LeafReportLineName }, lines.Select(x => x.Name).ToArray());
             }
         }
 
@@ -197,7 +200,7 @@ namespace Gravity.Manager.Tests.Service
         private static IEnumerable<DiscoveryReportInfo> GenerateDependencyReports()
         {
             return GenerateDependencyFindings()
-                .SelectMany(x => new[] {x.Source, x.Target})
+                .SelectMany(x => new[] { x.Source, x.Target })
                 .Distinct()
                 .Select(x => new DiscoveryReportInfo
                 {
