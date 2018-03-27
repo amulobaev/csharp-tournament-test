@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Threading.Tasks;
+using Gravity.Manager.Data;
 using Gravity.Manager.Service;
 using Gravity.Manager.Web.Models;
 using Gravity.Manager.Web.Models.DiscoveryReport;
@@ -25,16 +26,26 @@ namespace Gravity.Manager.Web.Controllers
             var sessions = await _service.GetDiscoverySessionsWithAccountsAsync();
             var sessionModels = sessions.Select(x => new DiscoverySessionViewModel(x))
                 .OrderBy(x => x.RunDate).ToList();
-            
+
             return View(sessionModels);
         }
 
         [Route("{id}")]
         public async Task<IActionResult> Report(long id)
         {
-            var report = await _service.GetDiscoveryReportAsync(id);
-            
-            return report != null 
+            DiscoveryReport report = null;
+
+            try
+            {
+                report = await _service.GetDiscoveryReportAsync(id);
+            }
+            catch (Exception ex)
+            {
+                // Log exception
+                // Report was not found
+            }
+
+            return report != null
                 ? View(new DiscoveryReportViewModel(report))
                 : View("NotFound", id);
         }
